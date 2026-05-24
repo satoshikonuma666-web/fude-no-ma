@@ -106,7 +106,7 @@ export function renderEditor(root) {
     spellcheck: 'false',
     autocapitalize: 'off',
     autocorrect: 'off',
-    inputmode: 'none',                    // iOS のソフトキーボードを抑止（カスタム鍵盤を使うため）
+    // iOS の純正フリック入力欄を表示するため inputmode は指定しない
     'data-mode': settings.writingMode || 'vertical',
     'data-ruled': String(settings.showRuledLines !== false),
     'data-placeholder': '　ここから書き始めましょう。',
@@ -148,8 +148,7 @@ export function renderEditor(root) {
     cursorRow.appendChild(cBtn(arrowSvg('end'),   '行末',    () => moveCursor('lineEnd')));
     screen.appendChild(cursorRow);
 
-    // ========== iPhone フリックキーボード ==========
-    screen.appendChild(buildIosKeyboard());
+    // iPhone の純正フリックキーボードを利用するため、自作キーボードは表示しません
   }
 
   root.appendChild(screen);

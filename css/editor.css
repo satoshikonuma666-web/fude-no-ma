@@ -131,9 +131,11 @@
   color: var(--ink-soft);
 }
 
-/* 罫線（CSS変数 --paper-lh で実際の line-height に追従） */
+/* 罫線（CSS変数 --paper-lh で実際の line-height に追従、--paper-pad でパディング分のずれ補正） */
 .editor-paper {
   --paper-lh: 1.9;
+  --paper-pad-x: 14px;       /* 縦書き時の左右パディング */
+  --paper-pad-y: 18px;       /* 横書き時の上下パディング */
   --rule-color: var(--ruled-line, rgba(0,0,0,0.12));
 }
 .editor-paper[data-mode="horizontal"][data-ruled="true"] {
@@ -144,8 +146,8 @@
     var(--rule-color) calc(var(--paper-lh) * 1em - 1px),
     var(--rule-color) calc(var(--paper-lh) * 1em)
   );
-  background-origin: content-box;
-  background-clip: padding-box;
+  background-origin: padding-box;
+  background-position-y: calc(-1 * var(--paper-pad-y));
   background-attachment: local;
   background-repeat: repeat;
 }
@@ -157,8 +159,8 @@
     var(--rule-color) calc(var(--paper-lh) * 1em - 1px),
     var(--rule-color) calc(var(--paper-lh) * 1em)
   );
-  background-origin: content-box;
-  background-clip: padding-box;
+  background-origin: padding-box;
+  background-position-x: calc(-1 * var(--paper-pad-x));
   background-attachment: local;
   background-repeat: repeat;
 }
