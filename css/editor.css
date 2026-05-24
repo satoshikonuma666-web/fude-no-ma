@@ -131,14 +131,18 @@
   color: var(--ink-soft);
 }
 
-/* 罫線（文字が罫線の間に収まるように content-box から開始） */
+/* 罫線（CSS変数 --paper-lh で実際の line-height に追従） */
+.editor-paper {
+  --paper-lh: 1.9;
+  --rule-color: var(--ruled-line, rgba(0,0,0,0.12));
+}
 .editor-paper[data-mode="horizontal"][data-ruled="true"] {
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0,
-    transparent calc(1.9em - 1px),
-    var(--ruled-line, rgba(0,0,0,0.18)) calc(1.9em - 1px),
-    var(--ruled-line, rgba(0,0,0,0.18)) 1.9em
+    transparent calc(var(--paper-lh) * 1em - 1px),
+    var(--rule-color) calc(var(--paper-lh) * 1em - 1px),
+    var(--rule-color) calc(var(--paper-lh) * 1em)
   );
   background-origin: content-box;
   background-clip: padding-box;
@@ -149,9 +153,9 @@
   background-image: repeating-linear-gradient(
     to left,
     transparent 0,
-    transparent calc(1.9em - 1px),
-    var(--ruled-line, rgba(0,0,0,0.18)) calc(1.9em - 1px),
-    var(--ruled-line, rgba(0,0,0,0.18)) 1.9em
+    transparent calc(var(--paper-lh) * 1em - 1px),
+    var(--rule-color) calc(var(--paper-lh) * 1em - 1px),
+    var(--rule-color) calc(var(--paper-lh) * 1em)
   );
   background-origin: content-box;
   background-clip: padding-box;

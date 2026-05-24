@@ -9,7 +9,7 @@ import { renderEditor, applyFontFamily } from './editor.js';
 import { renderProgress } from './chart.js';
 import { openModal } from './modal.js';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 
 const ROUTES = {
   '#screen-home':       renderHome,
@@ -749,16 +749,95 @@ function doPrintPreview() {
   if (!draft) { toast('原稿がありません'); return; }
   const w = window.open('', '_blank');
   if (!w) { toast('ポップアップがブロックされました'); return; }
-  const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"/>
-    <title>${draft.title}</title>
+  const safeTitle = escapeHtml(draft.title || '原稿');
+  const safeBody = escapeHtml(draft.body || '')
+    .replace(/｜([^｜《》]+?)《([^《》]+?)》/g, (_, b, r) => `<ruby>${b}<rt>${r}</rt></ruby>`);
+  const html = `<!doctype html><html lang="ja" dir="ltr"><head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <title>${safeTitle}</title>
     <style>
-      body { font-family: "Noto Serif JP","Yu Mincho",serif; padding: 24px; line-height: 1.9; }
-      h1 { font-size: 20px; border-bottom: 1px solid #999; padding-bottom: 6px; }
-      .body { white-space: pre-wrap; writing-mode: vertical-rl; text-orientation: mixed; height: 80vh; }
+      html, body { margin: 0; padding: 0; background: #FAF7F2; color: #1A1A1A; }
+      body {
+        font-family: "Noto Serif JP", "Yu Mincho", "YuMincho", serif;
+        height: 100vh;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        -webkit-font-smoothing: antialiased;
+      }
+      .preview-toolbar {
+        flex: 0 0 auto;
+        padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+        background: #FFFFFF;
+        border-bottom: 1px solid #E2DCCF;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "Hiragino Sans", system-ui, sans-serif;
+      }
+      .preview-toolbar .back {
+        background: transparent;
+        border: 1px solid #C9C0AE;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 14px;
+        cursor: pointer;
+        font-family: inherit;
+        color: #2C4A6E;
+      }
+      .preview-toolbar .print {
+        background: #2C4A6E;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 14px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .preview-toolbar .doc-title {
+        flex: 1;
+        text-align: center;
+        font-family: "Noto Serif JP", serif;
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .preview-page {
+        flex: 1 1 auto;
+        overflow-y: hidden;
+        overflow-x: auto;
+        background: #FFFFFF;
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .preview-body {
+        height: 100%;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        direction: ltr;
+        white-space: pre-wrap;
+        font-size: 17px;
+        line-height: 2;
+        padding: 28px 24px;
+        box-sizing: border-box;
+      }
+      .preview-body ruby rt { font-size: 0.55em; color: #555; }
+      @media print {
+        .preview-toolbar { display: none; }
+        .preview-page { overflow: visible; }
+        .preview-body { height: auto; min-height: 80vh; }
+      }
     </style></head><body>
-    <h1>${escapeHtml(draft.title)}</h1>
-    <div class="body">${escapeHtml(draft.body || '').replace(/｜([^｜《》]+?)《([^《》]+?)》/g, (_, b, r) => `<ruby>${b}<rt>${r}</rt></ruby>`)}</div>
-    <script>setTimeout(()=>window.print(),300);<\/script>
+    <div class="preview-toolbar">
+      <button class="back" onclick="window.close()">← 戻る</button>
+      <div class="doc-title">${safeTitle}</div>
+      <button class="print" onclick="window.print()">印刷 / PDF</button>
+    </div>
+    <div class="preview-page">
+      <div class="preview-body">${safeBody}</div>
+    </div>
     </body></html>`;
   w.document.write(html);
   w.document.close();

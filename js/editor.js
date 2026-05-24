@@ -104,6 +104,9 @@ export function renderEditor(root) {
     class: 'editor-paper',
     contenteditable: isReadOnly ? 'false' : 'true',
     spellcheck: 'false',
+    autocapitalize: 'off',
+    autocorrect: 'off',
+    inputmode: 'none',                    // iOS のソフトキーボードを抑止（カスタム鍵盤を使うため）
     'data-mode': settings.writingMode || 'vertical',
     'data-ruled': String(settings.showRuledLines !== false),
     'data-placeholder': '　ここから書き始めましょう。',
@@ -112,6 +115,8 @@ export function renderEditor(root) {
   });
   paperEl.style.fontSize = settings.fontSize + 'px';
   paperEl.style.lineHeight = String(settings.lineHeight);
+  // 罫線位置を実際の line-height に同期させる CSS 変数
+  paperEl.style.setProperty('--paper-lh', String(settings.lineHeight));
   applyFontFamily(paperEl, settings.font);
   paperEl.textContent = draft.body || '';
 
@@ -124,7 +129,12 @@ export function renderEditor(root) {
     const quickBar = el('div', { class: 'quick-bar' });
     for (const sym of (settings.customQuickButtons || ['「」','『』','ーー','……','　','\n'])) {
       const label = sym === '\n' ? '改行' : sym === '　' ? '空' : sym;
-      quickBar.appendChild(el('button', { onclick: () => insertSymbol(sym) }, label));
+      quickBar.appendChild(el('button', {
+        type: 'button',
+        onpointerdown: (e) => e.preventDefault(),
+        onmousedown:   (e) => e.preventDefault(),
+        onclick: () => insertSymbol(sym),
+      }, label));
     }
     screen.appendChild(quickBar);
 
@@ -162,7 +172,14 @@ function refresh() {
 }
 
 function cBtn(label, title, onclick) {
-  return el('button', { title, onclick }, label);
+  // pointerdown/mousedown で preventDefault → タップ時に paper のフォーカスを奪わない
+  return el('button', {
+    title,
+    type: 'button',
+    onpointerdown: (e) => e.preventDefault(),
+    onmousedown:   (e) => e.preventDefault(),
+    onclick,
+  }, label);
 }
 
 function arrowLeft() { return svg('M15 18l-6-6 6-6', { size: 18 }); }
@@ -445,9 +462,12 @@ function kbdLetter(rowKey, popup, kbd, opts = {}) {
 }
 
 function kbdFn(content, fn, extraClass = '') {
-  const btn = el('button', { class: 'ios-kbd-key fn ' + extraClass });
+  const btn = el('button', { class: 'ios-kbd-key fn ' + extraClass, type: 'button' });
   if (typeof content === 'string') btn.textContent = content;
   else btn.appendChild(content);
+  // フォーカスを奪わない
+  btn.addEventListener('pointerdown', (e) => e.preventDefault());
+  btn.addEventListener('mousedown', (e) => e.preventDefault());
   btn.addEventListener('click', () => handleKbdFn(fn));
   return btn;
 }
@@ -494,6 +514,7 @@ function bindIosFlick(btn, rowKey, popup, kbd, opts = {}) {
   }
 
   btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();  // paper のフォーカスを奪わない
     pointerId = e.pointerId;
     startX = e.clientX; startY = e.clientY;
     activeDir = 'c';
