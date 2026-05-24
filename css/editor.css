@@ -1,0 +1,403 @@
+/* 原稿エディタ専用 */
+
+.editor-screen {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  height: 100%;
+}
+
+/* ヘッダ（タイトル削除版：左に文字数を大きく） */
+.editor-header {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.editor-header .editor-spacer { min-width: 0; }
+
+/* 大きめカウンタ（左上） */
+.counter-large {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  font-variant-numeric: tabular-nums;
+  font-family: "Hiragino Sans", system-ui, sans-serif;
+}
+.counter-large .ctr-block {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+}
+.counter-large .ctr-block.today {
+  background: rgba(44, 74, 110, 0.10);
+  border-color: rgba(44, 74, 110, 0.25);
+}
+.counter-large .ctr-label {
+  font-size: 9px;
+  color: var(--ink-muted);
+  letter-spacing: 0.08em;
+  margin-bottom: 2px;
+}
+.counter-large .ctr-block.today .ctr-label { color: var(--accent); }
+.counter-large .ctr-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: "Noto Serif JP", serif;
+}
+.counter-large .ctr-block.today .ctr-value { color: var(--accent); }
+
+.editor-header .editor-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ヘッダ用の小さいアクションボタン */
+.editor-mini-btn {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  border-radius: 14px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 26px;
+}
+.editor-mini-btn:active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.editor-mini-btn svg { width: 12px; height: 12px; }
+
+/* 原稿入力欄 */
+.editor-canvas {
+  flex: 1 1 auto;
+  min-height: 160px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  overflow: auto;
+  position: relative;
+}
+.editor-paper {
+  height: 100%;
+  width: 100%;
+  padding: 14px 18px;
+  font-family: "Noto Serif JP", "Yu Mincho", "YuMincho", serif;
+  font-size: 16px;
+  line-height: 1.9;
+  color: var(--ink);
+  background: var(--bg-elev);
+  outline: none;
+  -webkit-user-select: text;
+  user-select: text;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.editor-paper:empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+
+/* 縦書き */
+.editor-paper[data-mode="vertical"] {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 18px 14px;
+}
+.editor-paper ruby { ruby-position: over; }
+.editor-paper rt {
+  font-size: 0.55em;
+  color: var(--ink-soft);
+}
+
+/* 罫線（文字が罫線の間に収まるように content-box から開始） */
+.editor-paper[data-mode="horizontal"][data-ruled="true"] {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(1.9em - 1px),
+    var(--ruled-line, rgba(0,0,0,0.18)) calc(1.9em - 1px),
+    var(--ruled-line, rgba(0,0,0,0.18)) 1.9em
+  );
+  background-origin: content-box;
+  background-clip: padding-box;
+  background-attachment: local;
+  background-repeat: repeat;
+}
+.editor-paper[data-mode="vertical"][data-ruled="true"] {
+  background-image: repeating-linear-gradient(
+    to left,
+    transparent 0,
+    transparent calc(1.9em - 1px),
+    var(--ruled-line, rgba(0,0,0,0.18)) calc(1.9em - 1px),
+    var(--ruled-line, rgba(0,0,0,0.18)) 1.9em
+  );
+  background-origin: content-box;
+  background-clip: padding-box;
+  background-attachment: local;
+  background-repeat: repeat;
+}
+.editor-paper[data-ruled="false"] { background-image: none !important; }
+
+/* 簡易入力ボタン行（少しスリムに） */
+.quick-bar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 5px;
+  padding: 4px 8px;
+  overflow-x: auto;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+.quick-bar::-webkit-scrollbar { height: 0; }
+.quick-bar button {
+  flex: 0 0 auto;
+  min-width: 36px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font-family: "Noto Serif JP", serif;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 1px 0 var(--border-strong);
+}
+.quick-bar button:active { background: var(--accent); color: #fff; transform: translateY(1px); box-shadow: none; }
+
+/* カーソル移動（1段・矢印） */
+.cursor-row {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-subtle);
+}
+.cursor-row button {
+  height: 36px;
+  border-radius: 6px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 0 var(--border-strong);
+}
+.cursor-row button svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--ink);
+  stroke-width: 2.8;
+  fill: none;
+}
+.cursor-row button:active { background: var(--bg-subtle); transform: translateY(1px); box-shadow: none; }
+
+/* 縦/横切替ボタン（記号表示） */
+.mode-toggle {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  border-radius: 14px;
+  padding: 3px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 26px;
+  min-width: 32px;
+  font-family: system-ui, sans-serif;
+}
+.mode-toggle.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* 完了プレビュー */
+.editor-screen.read-only .editor-paper {
+  cursor: default;
+}
+.editor-done-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(74, 122, 90, 0.16);
+  color: var(--safe);
+  border: 1px solid rgba(74, 122, 90, 0.35);
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  letter-spacing: 0.04em;
+}
+.editor-readonly-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(74, 122, 90, 0.08);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+/* iPhone 風フリックキーボード */
+.ios-kbd {
+  flex: 0 0 auto;
+  background: #2A2A2A;
+  padding: 6px 4px 4px;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ios-kbd-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 5px;
+  height: 200px;
+}
+.ios-kbd-key {
+  background: #5F5F5F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  touch-action: none;
+  transition: background 60ms, transform 60ms;
+}
+.ios-kbd-key.fn {
+  background: #404040;
+  font-size: 14px;
+  color: #FFFFFF;
+}
+.ios-kbd-key:active {
+  background: #767676;
+  transform: translateY(1px);
+  box-shadow: none;
+}
+.ios-kbd-key.fn:active { background: #5A5A5A; }
+.ios-kbd-key svg { width: 22px; height: 22px; stroke: #FFFFFF; fill: none; }
+
+/* リターンキー（縦に2セル分） */
+.ios-kbd-return {
+  grid-row: 3 / span 2;
+  grid-column: 5;
+}
+
+/* 最下部の地球儀・マイク行 */
+.ios-kbd-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 4px;
+  height: 36px;
+}
+.ios-kbd-spacer { flex: 1; }
+.ios-corner {
+  background: transparent;
+  border: none;
+  color: #FFFFFF;
+  width: 38px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.ios-corner svg { width: 22px; height: 22px; stroke: #FFFFFF; fill: none; }
+.ios-corner:active { background: rgba(255,255,255,0.12); }
+
+/* フリックポップアップ（5方向の十字） */
+.ios-flick-popup {
+  position: absolute;
+  width: 108px;
+  height: 108px;
+  pointer-events: none;
+  z-index: 30;
+  display: none;
+}
+.ios-flick-popup.active { display: block; }
+.ios-flick-popup .flick-tile {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  background: #2A2A2A;
+  border: 1px solid #555;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Noto Serif JP", serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+}
+.ios-flick-popup .flick-tile.center { left: 36px; top: 36px; background: #B0B0B0; color: #1A1A1A; border-color: #B0B0B0; }
+.ios-flick-popup .flick-tile.left   { left: 0;    top: 36px; }
+.ios-flick-popup .flick-tile.up     { left: 36px; top: 0; }
+.ios-flick-popup .flick-tile.right  { left: 72px; top: 36px; }
+.ios-flick-popup .flick-tile.down   { left: 36px; top: 72px; }
+.ios-flick-popup .flick-tile.active {
+  background: #FFFFFF;
+  color: #1A1A1A;
+  border-color: #FFFFFF;
+  transform: scale(1.08);
+}
+
+/* 検索置換ダイアログ */
+.search-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.search-fields .row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 6px;
+  align-items: center;
+}
+.search-fields label {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.search-stat {
+  font-size: 11px;
+  color: var(--ink-muted);
+}

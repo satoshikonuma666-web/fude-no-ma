@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>アイコン生成ツール — 筆の間</title>
+  <style>
+    body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; padding: 24px; background: #FAF7F2; color: #1A1A1A; max-width: 880px; margin: 0 auto; }
+    h1 { font-size: 20px; margin-top: 0; font-family: "Yu Mincho", "Noto Serif JP", serif; }
+    p  { font-size: 14px; line-height: 1.7; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-top: 12px; }
+    .item { background: #fff; border: 1px solid #E2DCCF; border-radius: 12px; padding: 12px; text-align: center; }
+    .item canvas { width: 128px; height: 128px; border: 1px solid #E2DCCF; border-radius: 8px; background: #f4eee2; image-rendering: -webkit-optimize-contrast; }
+    .item .name { font-size: 12px; font-weight: 600; margin: 8px 0 6px; color: #444; }
+    .item a { display: inline-block; font-size: 12px; padding: 6px 12px; background: #2C4A6E; color: #fff; border-radius: 6px; text-decoration: none; }
+    .item a:hover { background: #1F3551; }
+    button { font-family: inherit; font-size: 14px; padding: 10px 18px; background: #2C4A6E; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin: 4px 4px 4px 0; }
+    button:hover { background: #1F3551; }
+    .hint { background: #FFF; border: 1px solid #E2DCCF; border-radius: 10px; padding: 12px 14px; margin: 16px 0; font-size: 13px; line-height: 1.7; }
+    code { background: #F0EBE2; padding: 1px 6px; border-radius: 4px; font-size: 12px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+    .status { margin-top: 8px; font-size: 12px; color: #555; }
+    .status.error { color: #C44545; }
+  </style>
+</head>
+<body>
+  <h1>筆の間 — アイコン PNG 生成</h1>
+  <p>アプリアイコン用の PNG を 4 枚生成します。<br>
+     SVG ファイルはこの HTML に埋め込まれているため、<strong><code>file://</code> で直接開いても動作します</strong>。</p>
+
+  <button id="run">PNG を生成する</button>
+  <button id="downloadAll">すべて一括ダウンロード</button>
+  <div class="status" id="status">準備中…</div>
+
+  <div class="hint">
+    <strong>生成されるファイル：</strong><br>
+    <code>assets/icon-180.png</code>（iOS ホーム画面 / apple-touch-icon）<br>
+    <code>assets/icon-192.png</code>（Android / PWA）<br>
+    <code>assets/icon-512.png</code>（PWA スプラッシュ）<br>
+    <code>assets/icon-maskable-512.png</code>（PWA マスカブル）<br><br>
+    ダウンロード後、すべて <code>assets/</code> フォルダに置いてください。
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <script>
+    // ---- SVG をインラインで埋め込み（file:// での CORS 制約を回避）----
+
+    const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2C4A6E"/>
+      <stop offset="100%" stop-color="#1B2F4B"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#bg)"/>
+  <path d="M 320 90
+           C 332 105, 332 130, 322 160
+           C 312 200, 298 250, 280 310
+           C 268 360, 252 410, 232 444
+           C 222 458, 208 462, 196 454
+           C 184 446, 178 432, 184 416
+           C 196 380, 214 322, 232 270
+           C 252 210, 274 152, 296 110
+           C 302 96, 312 86, 320 90 Z"
+        fill="#FAF7F2"/>
+  <circle cx="194" cy="466" r="9" fill="#FAF7F2" opacity="0.85"/>
+  <circle cx="174" cy="478" r="5" fill="#FAF7F2" opacity="0.5"/>
+  <rect x="354" y="354" width="80" height="80" rx="6" fill="#C44545"/>
+  <text x="394" y="409" font-family="Yu Mincho, Hiragino Mincho ProN, Noto Serif JP, serif" font-size="56" font-weight="700"
+        text-anchor="middle" fill="#FAF7F2">筆</text>
+</svg>`;
+
+    const ICON_MASKABLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2C4A6E"/>
+      <stop offset="100%" stop-color="#1B2F4B"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg2)"/>
+  <g transform="translate(110, 110) scale(0.57)">
+    <path d="M 320 90
+             C 332 105, 332 130, 322 160
+             C 312 200, 298 250, 280 310
+             C 268 360, 252 410, 232 444
+             C 222 458, 208 462, 196 454
+             C 184 446, 178 432, 184 416
+             C 196 380, 214 322, 232 270
+             C 252 210, 274 152, 296 110
+             C 302 96, 312 86, 320 90 Z"
+          fill="#FAF7F2"/>
+    <circle cx="194" cy="466" r="9" fill="#FAF7F2" opacity="0.85"/>
+    <circle cx="174" cy="478" r="5" fill="#FAF7F2" opacity="0.5"/>
+    <rect x="354" y="354" width="80" height="80" rx="6" fill="#C44545"/>
+    <text x="394" y="409" font-family="Yu Mincho, Hiragino Mincho ProN, Noto Serif JP, serif" font-size="56" font-weight="700"
+          text-anchor="middle" fill="#FAF7F2">筆</text>
+  </g>
+</svg>`;
+
+    const SIZES = [
+      { name: 'icon-180.png',          size: 180, svg: ICON_SVG },
+      { name: 'icon-192.png',          size: 192, svg: ICON_SVG },
+      { name: 'icon-512.png',          size: 512, svg: ICON_SVG },
+      { name: 'icon-maskable-512.png', size: 512, svg: ICON_MASKABLE_SVG },
+    ];
+
+    const status = document.getElementById('status');
+
+    function svgToDataUrl(svg) {
+      // UTF-8 を安全に base64 化（日本語含む）
+      const utf8 = unescape(encodeURIComponent(svg));
+      return 'data:image/svg+xml;base64,' + btoa(utf8);
+    }
+
+    function loadImage(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload  = () => resolve(img);
+        img.onerror = (e) => reject(new Error('画像読み込みエラー: ' + (e?.message || 'unknown')));
+        img.src = url;
+      });
+    }
+
+    async function generate() {
+      status.textContent = '生成中…';
+      status.classList.remove('error');
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      try {
+        for (const cfg of SIZES) {
+          const url = svgToDataUrl(cfg.svg);
+          const img = await loadImage(url);
+
+          const canvas = document.createElement('canvas');
+          canvas.width = cfg.size;
+          canvas.height = cfg.size;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, cfg.size, cfg.size);
+
+          const pngUrl = canvas.toDataURL('image/png');
+
+          const item = document.createElement('div');
+          item.className = 'item';
+          item.appendChild(canvas);
+
+          const name = document.createElement('div');
+          name.className = 'name';
+          name.textContent = `${cfg.name}（${cfg.size}×${cfg.size}）`;
+          item.appendChild(name);
+
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = cfg.name;
+          a.textContent = 'ダウンロード';
+          item.appendChild(a);
+
+          grid.appendChild(item);
+        }
+        status.textContent = '生成完了。各カードの「ダウンロード」を押すか、上の「すべて一括ダウンロード」を押してください。';
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'エラー: ' + err.message;
+        status.classList.add('error');
+      }
+    }
+
+    document.getElementById('run').addEventListener('click', generate);
+
+    document.getElementById('downloadAll').addEventListener('click', async () => {
+      // まだ生成されていなければ生成する
+      if (!document.querySelector('#grid a')) await generate();
+      const links = [...document.querySelectorAll('#grid a')];
+      for (const a of links) {
+        a.click();
+        await new Promise(r => setTimeout(r, 250));
+      }
+      status.textContent = `${links.length} 個のファイルをダウンロードしました。`;
+    });
+
+    // ページ表示直後に自動生成
+    window.addEventListener('load', generate);
+  </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="筆の間">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2C4A6E"/>
+      <stop offset="100%" stop-color="#1B2F4B"/>
+    </linearGradient>
+  </defs>
+  <!-- マスカブルなので外側に bleed を確保（80px のセーフゾーン） -->
+  <rect width="512" height="512" fill="url(#bg2)"/>
+  <g transform="translate(0, 0) scale(0.7) translate(110, 110)">
+    <path d="M 320 90
+             C 332 105, 332 130, 322 160
+             C 312 200, 298 250, 280 310
+             C 268 360, 252 410, 232 444
+             C 222 458, 208 462, 196 454
+             C 184 446, 178 432, 184 416
+             C 196 380, 214 322, 232 270
+             C 252 210, 274 152, 296 110
+             C 302 96, 312 86, 320 90 Z"
+          fill="#FAF7F2"/>
+    <circle cx="194" cy="466" r="9" fill="#FAF7F2" opacity="0.85"/>
+    <circle cx="174" cy="478" r="5" fill="#FAF7F2" opacity="0.5"/>
+    <rect x="354" y="354" width="80" height="80" rx="6" fill="#C44545"/>
+    <text x="394" y="409" font-family="Yu Mincho, Noto Serif JP, serif" font-size="56" font-weight="700"
+          text-anchor="middle" fill="#FAF7F2">筆</text>
+  </g>
+</svg>
