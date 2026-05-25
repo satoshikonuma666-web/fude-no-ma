@@ -70,7 +70,13 @@ body {
    PWA 起動時（ホーム画面から起動）／狭幅スマホは全画面化
    ============================================================ */
 @media (display-mode: standalone), (display-mode: fullscreen), (max-width: 430px) {
-  html, body { background: var(--bg); }
+  html, body {
+    background: var(--bg);
+    overflow: hidden;             /* body 全体のスクロールを禁止 */
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
   body { padding: 0; }
   .device-frame {
     width: 100vw;
@@ -82,7 +88,11 @@ body {
   .notch { display: none; }
   .status-bar { display: none; }
   /* iPhone のセーフエリア（ノッチ／ホームバー）を回避 */
-  .device-frame { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; }
+  .device-frame {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
+  }
 }
 
 .status-time { padding-left: 4px; }
@@ -113,7 +123,7 @@ body {
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* ヘッダ */
+/* ヘッダ（スクロールしない固定位置） */
 .app-header {
   flex: 0 0 auto;
   padding: 6px 16px 10px;
@@ -121,8 +131,16 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
+  z-index: 5;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
+}
+.app-title-bar {
+  /* Topページ用タイトルバー（強調・固定） */
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  padding: 10px 16px 12px;
 }
 
 .app-header h1,
@@ -198,8 +216,9 @@ body {
   background: var(--nav-bg);
   backdrop-filter: blur(12px);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   z-index: 10;
+  position: relative;
 }
 .nav-item {
   background: transparent;
@@ -210,11 +229,12 @@ body {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  font-size: 11px;
+  font-size: 10px;
   cursor: pointer;
   font-family: inherit;
+  padding: 4px 2px;
 }
-.nav-item .nav-icon { width: 22px; height: 22px; }
+.nav-item .nav-icon { width: 20px; height: 20px; }
 .nav-item.active { color: var(--accent); }
 
 /* Top ページ */
@@ -350,8 +370,8 @@ body {
 }
 .draft-row {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 12px;
+  grid-template-columns: 1fr auto auto;
+  gap: 4px 10px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
@@ -378,6 +398,26 @@ body {
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
+}
+.draft-delete-btn {
+  grid-row: 1 / 3;
+  grid-column: 3 / 4;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.draft-delete-btn svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+.draft-delete-btn:active {
+  background: rgba(196, 69, 69, 0.12);
+  color: var(--warn);
 }
 .badge {
   display: inline-block;

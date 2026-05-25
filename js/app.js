@@ -9,7 +9,7 @@ import { renderEditor, applyFontFamily } from './editor.js';
 import { renderProgress } from './chart.js';
 import { openModal } from './modal.js';
 
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3';
 
 const ROUTES = {
   '#screen-home':       renderHome,
@@ -205,6 +205,11 @@ function buildDraftList() {
       title: 'タップでステータスを変更',
       onclick: (e) => { e.stopPropagation(); openStatusPicker(d.id); },
     }, statusLabel(d.status));
+    const deleteBtn = el('button', {
+      class: 'draft-delete-btn',
+      title: 'この原稿を削除',
+      onclick: (e) => { e.stopPropagation(); promptDelete(d.id, d.title); },
+    }, svg('M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6', { size: 16, strokeWidth: 1.8 }));
     row.append(
       el('div', { class: 'draft-title' }, d.title || '無題の原稿'),
       el('div', { class: 'draft-meta' }, `${fmtRelative(d.lastEditedAt)}に編集`),
@@ -212,9 +217,8 @@ function buildDraftList() {
         badge,
         el('span', { class: 'char-count' }, `${chars.toLocaleString()} 字`),
       ]),
+      deleteBtn,
     );
-    // 長押しで削除
-    bindLongPress(row, () => promptDelete(d.id, d.title));
     list.appendChild(row);
   }
   return list;

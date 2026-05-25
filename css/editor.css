@@ -7,7 +7,7 @@
   height: 100%;
 }
 
-/* ヘッダ（タイトル削除版：左に文字数を大きく） */
+/* ヘッダ（タイトル削除版：左に文字数を大きく・固定） */
 .editor-header {
   flex: 0 0 auto;
   display: grid;
@@ -17,6 +17,8 @@
   padding: 4px 6px;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
+  position: relative;
+  z-index: 8;
 }
 .editor-header .editor-spacer { min-width: 0; }
 

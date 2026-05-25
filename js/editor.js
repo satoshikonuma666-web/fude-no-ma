@@ -34,6 +34,7 @@ export function renderEditor(root) {
   // ========== ヘッダ ==========
   const backBtn = el('button', {
     class: 'back-btn',
+    tabindex: '-1',
     onclick: () => { location.hash = '#screen-home'; },
   }, [arrowLeft(), '戻る']);
 
@@ -43,6 +44,8 @@ export function renderEditor(root) {
   // 縦/横は記号で
   const modeToggle = el('button', {
     class: 'mode-toggle' + (settings.writingMode === 'vertical' ? ' active' : ''),
+    tabindex: '-1',
+    onpointerdown: (e) => e.preventDefault(),
     onclick: toggleMode,
     title: settings.writingMode === 'vertical' ? '縦書き（クリックで横へ）' : '横書き（クリックで縦へ）',
   }, settings.writingMode === 'vertical' ? '↕' : '↔');
@@ -50,21 +53,42 @@ export function renderEditor(root) {
 
   let actions;
   if (isReadOnly) {
-    // プレビュー時は『完了』バッジのみ
+    // プレビュー時は『完了』バッジ＋全文コピーのみ
     const doneBadge = el('span', { class: 'editor-done-badge' }, '完了 / プレビュー');
-    actions = el('div', { class: 'editor-actions' }, [doneBadge, modeToggle]);
+    const copyBtn = el('button', {
+      class: 'editor-mini-btn',
+      title: '全文コピー',
+      type: 'button',
+      onpointerdown: (e) => e.preventDefault(),
+      onclick: copyWholeBody,
+    }, 'コピー');
+    actions = el('div', { class: 'editor-actions' }, [doneBadge, copyBtn, modeToggle]);
   } else {
+    const copyBtn = el('button', {
+      class: 'editor-mini-btn',
+      title: '全文コピー',
+      type: 'button',
+      tabindex: '-1',
+      onpointerdown: (e) => e.preventDefault(),
+      onclick: copyWholeBody,
+    }, 'コピー');
     const replaceBtn = el('button', {
       class: 'editor-mini-btn',
       title: '検索・置換',
+      type: 'button',
+      tabindex: '-1',
+      onpointerdown: (e) => e.preventDefault(),
       onclick: () => openSearchReplace(paperEl, currentDraftId, refresh),
     }, '置換');
     const variantBtn = el('button', {
       class: 'editor-mini-btn',
       title: '表記揺れ',
+      type: 'button',
+      tabindex: '-1',
+      onpointerdown: (e) => e.preventDefault(),
       onclick: () => openVariantCheck(paperEl, currentDraftId, refresh),
     }, '揺れ');
-    actions = el('div', { class: 'editor-actions' }, [replaceBtn, variantBtn, modeToggle]);
+    actions = el('div', { class: 'editor-actions' }, [copyBtn, replaceBtn, variantBtn, modeToggle]);
   }
 
   const header = el('div', { class: 'editor-header' }, [backBtn, counterEl, el('div', { class: 'editor-spacer' }), actions]);
@@ -131,6 +155,7 @@ export function renderEditor(root) {
       const label = sym === '\n' ? '改行' : sym === '　' ? '空' : sym;
       quickBar.appendChild(el('button', {
         type: 'button',
+        tabindex: '-1',
         onpointerdown: (e) => e.preventDefault(),
         onmousedown:   (e) => e.preventDefault(),
         onclick: () => insertSymbol(sym),
@@ -138,17 +163,8 @@ export function renderEditor(root) {
     }
     screen.appendChild(quickBar);
 
-    // ========== カーソル移動（1段・矢印） ==========
-    const cursorRow = el('div', { class: 'cursor-row' });
-    cursorRow.appendChild(cBtn(arrowSvg('left'),  '1文字左', () => moveCursor('charBackward')));
-    cursorRow.appendChild(cBtn(arrowSvg('right'), '1文字右', () => moveCursor('charForward')));
-    cursorRow.appendChild(cBtn(arrowSvg('up'),    '1行上',   () => moveCursor('lineBackward')));
-    cursorRow.appendChild(cBtn(arrowSvg('down'),  '1行下',   () => moveCursor('lineForward')));
-    cursorRow.appendChild(cBtn(arrowSvg('home'),  '行頭',    () => moveCursor('lineStart')));
-    cursorRow.appendChild(cBtn(arrowSvg('end'),   '行末',    () => moveCursor('lineEnd')));
-    screen.appendChild(cursorRow);
-
-    // iPhone の純正フリックキーボードを利用するため、自作キーボードは表示しません
+    // カーソル移動矢印は削除（iOS 標準のタップ／カーソル操作を使用）
+    // iPhone の純正フリックキーボードを利用するため、自作キーボードも表示しません
   }
 
   root.appendChild(screen);
@@ -168,6 +184,33 @@ function refresh() {
     paperEl.textContent = draft.body || '';
   }
   updateCounter();
+}
+
+async function copyWholeBody() {
+  const draft = getCurrentDraft();
+  if (!draft) return;
+  const text = (paperEl ? paperEl.innerText : draft.body) || '';
+  if (!text) { toast('本文がありません'); return; }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      // フォールバック: 一時的な textarea でコピー
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    const chars = text.replace(/\s/g, '').length;
+    toast(`全文をコピーしました（${chars.toLocaleString()}字）`);
+  } catch (e) {
+    toast('コピーに失敗しました');
+    console.warn(e);
+  }
 }
 
 function cBtn(label, title, onclick) {
