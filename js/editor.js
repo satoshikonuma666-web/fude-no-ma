@@ -130,7 +130,8 @@ export function renderEditor(root) {
     spellcheck: 'false',
     autocapitalize: 'off',
     autocorrect: 'off',
-    // iOS の純正フリック入力欄を表示するため inputmode は指定しない
+    // iOS 純正キーボードを抑止して、自作フリックキーボードを常時表示できるようにする
+    inputmode: 'none',
     'data-mode': settings.writingMode || 'vertical',
     'data-ruled': String(settings.showRuledLines !== false),
     'data-placeholder': '　ここから書き始めましょう。',
@@ -149,7 +150,7 @@ export function renderEditor(root) {
 
   // 完了状態のときは入力系のUI（簡易入力・カーソル・キーボード）を出さない
   if (!isReadOnly) {
-    // ========== 簡易入力ボタン ==========
+    // ========== 簡易入力ボタン（フリックキーボードの上に常時表示） ==========
     const quickBar = el('div', { class: 'quick-bar' });
     for (const sym of (settings.customQuickButtons || ['「」','『』','ーー','……','　','\n'])) {
       const label = sym === '\n' ? '改行' : sym === '　' ? '空' : sym;
@@ -163,8 +164,8 @@ export function renderEditor(root) {
     }
     screen.appendChild(quickBar);
 
-    // カーソル移動矢印は削除（iOS 標準のタップ／カーソル操作を使用）
-    // iPhone の純正フリックキーボードを利用するため、自作キーボードも表示しません
+    // ========== iPhone 風フリックキーボード（常時表示） ==========
+    screen.appendChild(buildIosKeyboard());
   }
 
   root.appendChild(screen);
