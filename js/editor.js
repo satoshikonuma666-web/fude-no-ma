@@ -12,8 +12,12 @@ let currentDraftId = null;
 let modeToggleEl = null;
 let sessionStartTotal = 0;     // セッション開始時の総文字数
 let savedTodayBaseline = 0;    // 今日分の既存記録（セッション開始時）
+let toolbarCleanup = null;     // visualViewport 監視解除用
 
 export function renderEditor(root) {
+  // 直前のエディタ描画で張ったリスナーを掃除
+  if (toolbarCleanup) { toolbarCleanup(); toolbarCleanup = null; }
+
   const draft = getCurrentDraft();
   if (!draft) {
     root.appendChild(el('div', { class: 'empty-state' }, '原稿がありません。ホームから新規作成してください。'));
@@ -124,14 +128,14 @@ export function renderEditor(root) {
   }
 
   // ========== 原稿入力欄 ==========
+  // フォーカス時に iPhone 標準の日本語キーボード（フリック入力／予測変換）が出る前提。
+  // inputmode は指定しない。
   paperEl = el('div', {
     class: 'editor-paper',
     contenteditable: isReadOnly ? 'false' : 'true',
     spellcheck: 'false',
     autocapitalize: 'off',
     autocorrect: 'off',
-    // iOS 純正キーボードを抑止して、自作フリックキーボードを常時表示できるようにする
-    inputmode: 'none',
     'data-mode': settings.writingMode || 'vertical',
     'data-ruled': String(settings.showRuledLines !== false),
     'data-placeholder': '　ここから書き始めましょう。',
@@ -150,22 +154,13 @@ export function renderEditor(root) {
 
   // 完了状態のときは入力系のUI（簡易入力・カーソル・キーボード）を出さない
   if (!isReadOnly) {
-    // ========== 簡易入力ボタン（フリックキーボードの上に常時表示） ==========
-    const quickBar = el('div', { class: 'quick-bar' });
-    for (const sym of (settings.customQuickButtons || ['「」','『』','ーー','……','　','\n'])) {
-      const label = sym === '\n' ? '改行' : sym === '　' ? '空' : sym;
-      quickBar.appendChild(el('button', {
-        type: 'button',
-        tabindex: '-1',
-        onpointerdown: (e) => e.preventDefault(),
-        onmousedown:   (e) => e.preventDefault(),
-        onclick: () => insertSymbol(sym),
-      }, label));
-    }
-    screen.appendChild(quickBar);
-
-    // ========== iPhone 風フリックキーボード（常時表示） ==========
-    screen.appendChild(buildIosKeyboard());
+    // ========== 入力ツールバー ==========
+    // ・キーボードの直上に固定表示する 2 段ツールバー
+    // ・上段＝簡易入力（「」『』 等）／下段＝undo・redo・カーソル移動・文頭文末・全角スペース
+    // ・iPhone のキーボードが出現したら visualViewport の高さ変化に追従して上にせり上がる
+    const toolbar = buildEditorToolbar();
+    screen.appendChild(toolbar);
+    toolbarCleanup = setupToolbarTracking(toolbar);
   }
 
   root.appendChild(screen);
@@ -329,6 +324,8 @@ function moveCursor(kind) {
   let next = pos;
   if (kind === 'charBackward') next = Math.max(0, pos - 1);
   if (kind === 'charForward')  next = Math.min(text.length, pos + 1);
+  if (kind === 'docStart')     next = 0;
+  if (kind === 'docEnd')       next = text.length;
   if (kind === 'lineStart') {
     const before = text.slice(0, pos);
     const ln = before.lastIndexOf('\n');
@@ -418,216 +415,113 @@ export function applyFontFamily(node, font) {
 }
 
 // ============================================================
-// iPhone 風フリックキーボード
+// 入力ツールバー（キーボード直上に固定表示する 2 段ツールバー）
+// ------------------------------------------------------------
+// Web の制約:
+//   ・iOS のキーボード上部の予測変換バー（候補表示帯）には干渉できない。
+//   ・WebKit が描く inputAccessoryView 領域に直接ツールバーを注入できない。
+//   ・本実装は visualViewport の高さ差分からキーボード上端を算出し、
+//     ツールバーを position:fixed で「予測変換バーの上に乗せる」擬似実装。
+//   ・予測変換バー直上へ食い込ませる動作は Phase 2（SwiftUI / inputAccessoryView）で対応。
 // ============================================================
-const FLICK_ROWS_IOS = {
-  'あ': { c: 'あ', l: 'い', u: 'う', r: 'え', d: 'お' },
-  'か': { c: 'か', l: 'き', u: 'く', r: 'け', d: 'こ' },
-  'さ': { c: 'さ', l: 'し', u: 'す', r: 'せ', d: 'そ' },
-  'た': { c: 'た', l: 'ち', u: 'つ', r: 'て', d: 'と' },
-  'な': { c: 'な', l: 'に', u: 'ぬ', r: 'ね', d: 'の' },
-  'は': { c: 'は', l: 'ひ', u: 'ふ', r: 'へ', d: 'ほ' },
-  'ま': { c: 'ま', l: 'み', u: 'む', r: 'め', d: 'も' },
-  'や': { c: 'や', l: '（', u: 'ゆ', r: '）', d: 'よ' },
-  'ら': { c: 'ら', l: 'り', u: 'る', r: 'れ', d: 'ろ' },
-  'わ': { c: 'わ', l: 'を', u: 'ん', r: 'ー', d: '〜' },
-  '、': { c: '、', l: '。', u: '？', r: '！', d: '…' },
-};
 
-function buildIosKeyboard() {
-  const kbd = el('div', { class: 'ios-kbd' });
+function buildEditorToolbar() {
+  const settings = getState().settings;
 
-  // フリックポップアップ
-  const popup = el('div', { class: 'ios-flick-popup' }, [
-    el('div', { class: 'flick-tile up' }, ''),
-    el('div', { class: 'flick-tile left' }, ''),
-    el('div', { class: 'flick-tile center' }, ''),
-    el('div', { class: 'flick-tile right' }, ''),
-    el('div', { class: 'flick-tile down' }, ''),
-  ]);
-  kbd.appendChild(popup);
-
-  const grid = el('div', { class: 'ios-kbd-grid' });
-
-  // Row 1
-  grid.appendChild(kbdFn('→', 'cur-right'));
-  grid.appendChild(kbdLetter('あ', popup, kbd));
-  grid.appendChild(kbdLetter('か', popup, kbd));
-  grid.appendChild(kbdLetter('さ', popup, kbd));
-  grid.appendChild(kbdFn(deleteIcon(), 'del'));
-
-  // Row 2
-  grid.appendChild(kbdFn('↶', 'undo'));
-  grid.appendChild(kbdLetter('た', popup, kbd));
-  grid.appendChild(kbdLetter('な', popup, kbd));
-  grid.appendChild(kbdLetter('は', popup, kbd));
-  grid.appendChild(kbdFn('空白', 'space'));
-
-  // Row 3
-  grid.appendChild(kbdFn('ABC', 'abc'));
-  grid.appendChild(kbdLetter('ま', popup, kbd));
-  grid.appendChild(kbdLetter('や', popup, kbd));
-  grid.appendChild(kbdLetter('ら', popup, kbd));
-  grid.appendChild(kbdFn(returnIcon(), 'return', 'ios-kbd-return'));
-
-  // Row 4 (column 5 is occupied by the spanning return)
-  grid.appendChild(kbdFn(smileIcon(), 'emoji'));
-  grid.appendChild(kbdLetter('^_^', popup, kbd, { display: '^_^', insertCenter: '(^_^)' }));
-  grid.appendChild(kbdLetter('わ', popup, kbd, { display: 'わ_' }));
-  grid.appendChild(kbdLetter('、', popup, kbd, { display: '、。?!' }));
-
-  kbd.appendChild(grid);
-
-  // 最下部バー：地球儀／マイク
-  const bar = el('div', { class: 'ios-kbd-bottom' }, [
-    el('button', {
-      class: 'ios-corner',
-      onclick: () => toast('言語切替（モック）'),
-      title: '言語切替',
-    }, globeIcon()),
-    el('div', { class: 'ios-kbd-spacer' }),
-    el('button', {
-      class: 'ios-corner',
-      onclick: () => toast('音声入力（モック）'),
-      title: '音声入力',
-    }, micIcon()),
-  ]);
-  kbd.appendChild(bar);
-
-  return kbd;
-}
-
-function kbdLetter(rowKey, popup, kbd, opts = {}) {
-  const display = opts.display || rowKey;
-  const btn = el('button', { class: 'ios-kbd-key letter' }, display);
-  bindIosFlick(btn, rowKey, popup, kbd, opts);
-  return btn;
-}
-
-function kbdFn(content, fn, extraClass = '') {
-  const btn = el('button', { class: 'ios-kbd-key fn ' + extraClass, type: 'button' });
-  if (typeof content === 'string') btn.textContent = content;
-  else btn.appendChild(content);
-  // フォーカスを奪わない
-  btn.addEventListener('pointerdown', (e) => e.preventDefault());
-  btn.addEventListener('mousedown', (e) => e.preventDefault());
-  btn.addEventListener('click', () => handleKbdFn(fn));
-  return btn;
-}
-
-function bindIosFlick(btn, rowKey, popup, kbd, opts = {}) {
-  const map = FLICK_ROWS_IOS[rowKey];
-  if (!map) {
-    btn.addEventListener('click', () => {
-      if (opts.insertCenter) insertSymbol(opts.insertCenter);
-    });
-    return;
-  }
-  let startX = 0, startY = 0;
-  let activeDir = 'c';
-  let pointerId = null;
-
-  function setPopup(dir) {
-    const tiles = popup.querySelectorAll('.flick-tile');
-    tiles[0].textContent = map.u;
-    tiles[1].textContent = map.l;
-    tiles[2].textContent = map.c;
-    tiles[3].textContent = map.r;
-    tiles[4].textContent = map.d;
-    tiles.forEach(t => t.classList.remove('active'));
-    const cls = { c: 'center', l: 'left', u: 'up', r: 'right', d: 'down' }[dir];
-    if (cls) popup.querySelector('.' + cls).classList.add('active');
+  // 上段：簡易入力（横スクロール可）
+  const quickRow = el('div', { class: 'tb-row tb-quick' });
+  const quickButtons = settings.customQuickButtons || ['「」', '『』', 'ーー', '……', '　', '\n'];
+  for (const sym of quickButtons) {
+    const label = sym === '\n' ? '改行' : sym === '　' ? '空白' : sym;
+    quickRow.appendChild(tbButton(label, () => insertSymbol(sym)));
   }
 
-  function showPopup() {
-    const padRect = kbd.getBoundingClientRect();
-    const btnRect = btn.getBoundingClientRect();
-    const cx = btnRect.left - padRect.left + btnRect.width / 2 - 54;
-    const cy = btnRect.top - padRect.top + btnRect.height / 2 - 54;
-    popup.style.left = cx + 'px';
-    popup.style.top = cy + 'px';
-    popup.classList.add('active');
-  }
+  // 下段：カーソル移動・undo/redo・全角スペース（横スクロール可）
+  const cursorRow = el('div', { class: 'tb-row tb-cursor' });
+  cursorRow.append(
+    tbButton('↶',  () => execEdit('undo'),       '取り消し'),
+    tbButton('↷',  () => execEdit('redo'),       'やり直し'),
+    tbDivider(),
+    tbButton('←',  () => moveCursor('charBackward'), '1文字左'),
+    tbButton('→',  () => moveCursor('charForward'),  '1文字右'),
+    tbButton('↑',  () => moveCursor('lineBackward'), '1行上'),
+    tbButton('↓',  () => moveCursor('lineForward'),  '1行下'),
+    tbDivider(),
+    tbButton('|←', () => moveCursor('lineStart'),    '行頭'),
+    tbButton('→|', () => moveCursor('lineEnd'),      '行末'),
+    tbButton('⇈',  () => moveCursor('docStart'),     '文頭'),
+    tbButton('⇊',  () => moveCursor('docEnd'),       '文末'),
+    tbDivider(),
+    tbButton('⎵',  () => insertSymbol('　'),         '全角スペース'),
+  );
 
-  function calcDir(dx, dy) {
-    const TH = 16;
-    if (Math.abs(dx) < TH && Math.abs(dy) < TH) return 'c';
-    if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'r' : 'l';
-    return dy > 0 ? 'd' : 'u';
-  }
-
-  btn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();  // paper のフォーカスを奪わない
-    pointerId = e.pointerId;
-    startX = e.clientX; startY = e.clientY;
-    activeDir = 'c';
-    setPopup('c');
-    showPopup();
-    btn.setPointerCapture(e.pointerId);
-  });
-  btn.addEventListener('pointermove', (e) => {
-    if (e.pointerId !== pointerId) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    activeDir = calcDir(dx, dy);
-    setPopup(activeDir);
-  });
-  btn.addEventListener('pointerup', (e) => {
-    if (e.pointerId !== pointerId) return;
-    popup.classList.remove('active');
-    const ch = map[activeDir];
-    if (ch) insertSymbol(ch);
-    pointerId = null;
-  });
-  btn.addEventListener('pointercancel', () => {
-    popup.classList.remove('active');
-    pointerId = null;
-  });
-  btn.addEventListener('lostpointercapture', () => {
-    popup.classList.remove('active');
-    pointerId = null;
-  });
+  const toolbar = el('div', { class: 'editor-toolbar' }, [quickRow, cursorRow]);
+  // 初期位置（visualViewport が未対応の環境向けフォールバック）
+  toolbar.style.bottom = '0px';
+  return toolbar;
 }
 
-function handleKbdFn(fn) {
-  switch (fn) {
-    case 'del':       deleteOneChar(); break;
-    case 'space':     insertSymbol('　'); break;
-    case 'return':    insertSymbol('\n'); break;
-    case 'cur-right': moveCursor('charForward'); break;
-    case 'undo':      toast('元に戻す（モック）'); break;
-    case 'abc':       toast('英字入力（モック）'); break;
-    case 'emoji':     toast('絵文字（モック）'); break;
-  }
+function tbButton(label, onClick, title) {
+  return el('button', {
+    type: 'button',
+    class: 'tb-btn',
+    title: title || '',
+    tabindex: '-1',
+    'aria-label': title || label,
+    onpointerdown: (e) => e.preventDefault(),  // contenteditable のフォーカスを奪わない
+    onmousedown:   (e) => e.preventDefault(),
+    onclick: onClick,
+  }, label);
 }
 
-function deleteOneChar() {
+function tbDivider() {
+  return el('span', { class: 'tb-divider', 'aria-hidden': 'true' });
+}
+
+// visualViewport 監視でキーボード上端にツールバーを追従させる。
+// 戻り値はリスナー解除関数。
+function setupToolbarTracking(toolbar) {
+  const vv = window.visualViewport;
+
+  function update() {
+    if (vv) {
+      // キーボード高さ = レイアウトビューポート高 − 可視ビューポート高 − オフセット
+      const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+      toolbar.style.bottom = Math.max(0, keyboardHeight) + 'px';
+    } else {
+      // 非対応環境：画面下部に固定
+      toolbar.style.bottom = '0px';
+    }
+  }
+
+  let ac = null;
+  if (vv && typeof AbortController === 'function') {
+    ac = new AbortController();
+    vv.addEventListener('resize', update, { signal: ac.signal });
+    vv.addEventListener('scroll', update, { signal: ac.signal });
+  } else if (vv) {
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+  }
+  // 初回反映
+  update();
+
+  return () => {
+    if (ac) {
+      ac.abort();
+    } else if (vv) {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    }
+  };
+}
+
+// document.execCommand での undo/redo
+function execEdit(cmd) {
   if (!paperEl) return;
   paperEl.focus();
-  const sel = window.getSelection();
-  if (!sel || !sel.rangeCount) return;
-  const text = paperEl.innerText || '';
-  const pos = getCaretOffsetWithin(paperEl);
-  if (pos === 0) return;
-  const next = text.slice(0, pos - 1) + text.slice(pos);
-  paperEl.textContent = next;
-  setCaretOffsetWithin(paperEl, pos - 1);
+  try {
+    document.execCommand(cmd, false);
+  } catch (_) { /* ignore */ }
   onPaperInput();
-}
-
-// SVG アイコン
-function deleteIcon() {
-  return svg('M21 4H8a2 2 0 0 0-1.4.6L1 12l5.6 7.4A2 2 0 0 0 8 20h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6', { size: 22, stroke: '#fff' });
-}
-function returnIcon() {
-  return svg('M9 14L4 9l5-5M4 9h11a5 5 0 0 1 5 5v6', { size: 20, stroke: '#fff' });
-}
-function smileIcon() {
-  return svg('M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01', { size: 22, stroke: '#fff' });
-}
-function globeIcon() {
-  return svg('M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2c2.5 3 4 6.5 4 10s-1.5 7-4 10c-2.5-3-4-6.5-4-10s1.5-7 4-10z', { size: 22, stroke: '#fff' });
-}
-function micIcon() {
-  return svg('M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zM19 11a7 7 0 0 1-14 0M12 18v4M8 22h8', { size: 20, stroke: '#fff' });
 }

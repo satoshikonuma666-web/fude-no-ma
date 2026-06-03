@@ -97,6 +97,11 @@
   border-bottom: 1px solid var(--border);
   overflow: auto;
   position: relative;
+  /* 入力ツールバー（2段＝約 88px）でカーソル末尾が隠れないように余白 */
+  padding-bottom: 96px;
+}
+.editor-screen.read-only .editor-canvas {
+  padding-bottom: 12px;
 }
 .editor-paper {
   height: 100%;
@@ -276,117 +281,76 @@
   color: var(--ink-soft);
 }
 
-/* iPhone 風フリックキーボード */
-.ios-kbd {
-  flex: 0 0 auto;
-  background: #2A2A2A;
-  padding: 6px 4px 4px;
-  position: relative;
-  user-select: none;
-  -webkit-user-select: none;
+/* 入力ツールバー（キーボード直上に固定表示） */
+.editor-toolbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-subtle);
+  border-top: 1px solid var(--border-strong);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.10);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* visualViewport 非対応環境では bottom:0 のまま下端固定 */
 }
-.ios-kbd-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(4, 1fr);
+.tb-row {
+  display: flex;
   gap: 5px;
-  height: 200px;
+  padding: 5px 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
-.ios-kbd-key {
-  background: #5F5F5F;
-  color: #FFFFFF;
-  border: none;
-  border-radius: 6px;
-  font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
-  font-size: 18px;
+.tb-row::-webkit-scrollbar { height: 0; display: none; }
+.tb-row + .tb-row { border-top: 1px solid var(--border); }
+
+.tb-quick {
+  background: var(--bg);
+}
+.tb-cursor {
+  background: var(--bg-subtle);
+}
+
+.tb-btn {
+  flex: 0 0 auto;
+  min-width: 38px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font-family: "Hiragino Sans", system-ui, sans-serif;
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
-  touch-action: none;
-  transition: background 60ms, transform 60ms;
-}
-.ios-kbd-key.fn {
-  background: #404040;
-  font-size: 14px;
-  color: #FFFFFF;
-}
-.ios-kbd-key:active {
-  background: #767676;
-  transform: translateY(1px);
-  box-shadow: none;
-}
-.ios-kbd-key.fn:active { background: #5A5A5A; }
-.ios-kbd-key svg { width: 22px; height: 22px; stroke: #FFFFFF; fill: none; }
-
-/* リターンキー（縦に2セル分） */
-.ios-kbd-return {
-  grid-row: 3 / span 2;
-  grid-column: 5;
-}
-
-/* 最下部の地球儀・マイク行 */
-.ios-kbd-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 4px 4px;
-  height: 36px;
-}
-.ios-kbd-spacer { flex: 1; }
-.ios-corner {
-  background: transparent;
-  border: none;
-  color: #FFFFFF;
-  width: 38px;
-  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  border-radius: 6px;
+  box-shadow: 0 1px 0 var(--border-strong);
+  white-space: nowrap;
 }
-.ios-corner svg { width: 22px; height: 22px; stroke: #FFFFFF; fill: none; }
-.ios-corner:active { background: rgba(255,255,255,0.12); }
+.tb-quick .tb-btn {
+  font-family: "Noto Serif JP", "Yu Mincho", serif;
+}
+.tb-btn:active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  transform: translateY(1px);
+  box-shadow: none;
+}
 
-/* フリックポップアップ（5方向の十字） */
-.ios-flick-popup {
-  position: absolute;
-  width: 108px;
-  height: 108px;
-  pointer-events: none;
-  z-index: 30;
-  display: none;
-}
-.ios-flick-popup.active { display: block; }
-.ios-flick-popup .flick-tile {
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  background: #2A2A2A;
-  border: 1px solid #555;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: "Noto Serif JP", serif;
-  font-size: 18px;
-  font-weight: 600;
-  color: #FFFFFF;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
-}
-.ios-flick-popup .flick-tile.center { left: 36px; top: 36px; background: #B0B0B0; color: #1A1A1A; border-color: #B0B0B0; }
-.ios-flick-popup .flick-tile.left   { left: 0;    top: 36px; }
-.ios-flick-popup .flick-tile.up     { left: 36px; top: 0; }
-.ios-flick-popup .flick-tile.right  { left: 72px; top: 36px; }
-.ios-flick-popup .flick-tile.down   { left: 36px; top: 72px; }
-.ios-flick-popup .flick-tile.active {
-  background: #FFFFFF;
-  color: #1A1A1A;
-  border-color: #FFFFFF;
-  transform: scale(1.08);
+.tb-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 4px;
+  background: var(--border);
 }
 
 /* 検索置換ダイアログ */
