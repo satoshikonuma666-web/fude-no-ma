@@ -222,6 +222,10 @@ body {
   z-index: 10;
   position: relative;
 }
+/* nav.hidden = true のとき確実に非表示にする（display:grid を上書きするため） */
+.bottom-nav[hidden] {
+  display: none !important;
+}
 .nav-item {
   background: transparent;
   border: none;

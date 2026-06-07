@@ -97,8 +97,8 @@
   border-bottom: 1px solid var(--border);
   overflow: auto;
   position: relative;
-  /* 入力ツールバー（1段＝約 46px）でカーソル末尾が隠れないように余白 */
-  padding-bottom: 56px;
+  /* 入力ツールバー（1段＝約 44px）でカーソル末尾が隠れないように余白 */
+  padding-bottom: 48px;
 }
 .editor-screen.read-only .editor-canvas {
   padding-bottom: 12px;
@@ -281,7 +281,7 @@
   color: var(--ink-soft);
 }
 
-/* 入力ツールバー（キーボード直上に固定表示） */
+/* 入力ツールバー（キーボード直上に固定表示・1段／余白なし） */
 .editor-toolbar {
   position: fixed;
   left: 0;
@@ -294,25 +294,20 @@
   background: var(--bg-subtle);
   border-top: 1px solid var(--border-strong);
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.10);
-  padding-bottom: env(safe-area-inset-bottom);
-  /* visualViewport 非対応環境では bottom:0 のまま下端固定 */
+  /* 下段を撤去したので safe-area 込みの padding-bottom は付けない（余白を出さない） */
 }
 .tb-row {
   display: flex;
   gap: 5px;
-  padding: 5px 8px;
+  padding: 4px 8px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .tb-row::-webkit-scrollbar { height: 0; display: none; }
-.tb-row + .tb-row { border-top: 1px solid var(--border); }
 
 .tb-quick {
   background: var(--bg);
-}
-.tb-cursor {
-  background: var(--bg-subtle);
 }
 
 .tb-btn {
