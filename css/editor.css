@@ -97,8 +97,8 @@
   border-bottom: 1px solid var(--border);
   overflow: auto;
   position: relative;
-  /* 入力ツールバー（2段＝約 88px）でカーソル末尾が隠れないように余白 */
-  padding-bottom: 96px;
+  /* 入力ツールバー（1段＝約 46px）でカーソル末尾が隠れないように余白 */
+  padding-bottom: 56px;
 }
 .editor-screen.read-only .editor-canvas {
   padding-bottom: 12px;

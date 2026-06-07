@@ -428,7 +428,7 @@ export function applyFontFamily(node, font) {
 function buildEditorToolbar() {
   const settings = getState().settings;
 
-  // 上段：簡易入力（横スクロール可）
+  // 簡易入力のみ（取り消し・カーソル移動などの下段は廃止）
   const quickRow = el('div', { class: 'tb-row tb-quick' });
   const quickButtons = settings.customQuickButtons || ['「」', '『』', 'ーー', '……', '　', '\n'];
   for (const sym of quickButtons) {
@@ -436,26 +436,7 @@ function buildEditorToolbar() {
     quickRow.appendChild(tbButton(label, () => insertSymbol(sym)));
   }
 
-  // 下段：カーソル移動・undo/redo・全角スペース（横スクロール可）
-  const cursorRow = el('div', { class: 'tb-row tb-cursor' });
-  cursorRow.append(
-    tbButton('↶',  () => execEdit('undo'),       '取り消し'),
-    tbButton('↷',  () => execEdit('redo'),       'やり直し'),
-    tbDivider(),
-    tbButton('←',  () => moveCursor('charBackward'), '1文字左'),
-    tbButton('→',  () => moveCursor('charForward'),  '1文字右'),
-    tbButton('↑',  () => moveCursor('lineBackward'), '1行上'),
-    tbButton('↓',  () => moveCursor('lineForward'),  '1行下'),
-    tbDivider(),
-    tbButton('|←', () => moveCursor('lineStart'),    '行頭'),
-    tbButton('→|', () => moveCursor('lineEnd'),      '行末'),
-    tbButton('⇈',  () => moveCursor('docStart'),     '文頭'),
-    tbButton('⇊',  () => moveCursor('docEnd'),       '文末'),
-    tbDivider(),
-    tbButton('⎵',  () => insertSymbol('　'),         '全角スペース'),
-  );
-
-  const toolbar = el('div', { class: 'editor-toolbar' }, [quickRow, cursorRow]);
+  const toolbar = el('div', { class: 'editor-toolbar' }, [quickRow]);
   // 初期位置（visualViewport が未対応の環境向けフォールバック）
   toolbar.style.bottom = '0px';
   return toolbar;
