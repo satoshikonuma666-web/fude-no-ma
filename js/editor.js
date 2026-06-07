@@ -4,6 +4,7 @@ import { el, clear, countChars, toast, svg } from './util.js';
 import { getState, update, getCurrentDraft, recordTodayChars, patchSettings } from './store.js';
 import { openSearchReplace, openVariantCheck, openDictionary } from './search.js';
 import { openModal } from './modal.js';
+import { doPrintPreview } from './app.js';
 
 let saveTimer = null;
 let paperEl = null;
@@ -57,8 +58,15 @@ export function renderEditor(root) {
 
   let actions;
   if (isReadOnly) {
-    // プレビュー時は『完了』バッジ＋全文コピーのみ
+    // プレビュー時は『完了』バッジ＋プレビュー＋全文コピー
     const doneBadge = el('span', { class: 'editor-done-badge' }, '完了 / プレビュー');
+    const previewBtn = el('button', {
+      class: 'editor-mini-btn',
+      title: '縦組プレビュー / PDF',
+      type: 'button',
+      onpointerdown: (e) => e.preventDefault(),
+      onclick: doPrintPreview,
+    }, 'プレビュー');
     const copyBtn = el('button', {
       class: 'editor-mini-btn',
       title: '全文コピー',
@@ -66,8 +74,16 @@ export function renderEditor(root) {
       onpointerdown: (e) => e.preventDefault(),
       onclick: copyWholeBody,
     }, 'コピー');
-    actions = el('div', { class: 'editor-actions' }, [doneBadge, copyBtn, modeToggle]);
+    actions = el('div', { class: 'editor-actions' }, [doneBadge, previewBtn, copyBtn, modeToggle]);
   } else {
+    const previewBtn = el('button', {
+      class: 'editor-mini-btn',
+      title: '縦組プレビュー / PDF',
+      type: 'button',
+      tabindex: '-1',
+      onpointerdown: (e) => e.preventDefault(),
+      onclick: doPrintPreview,
+    }, 'プレビュー');
     const copyBtn = el('button', {
       class: 'editor-mini-btn',
       title: '全文コピー',
@@ -92,7 +108,7 @@ export function renderEditor(root) {
       onpointerdown: (e) => e.preventDefault(),
       onclick: () => openVariantCheck(paperEl, currentDraftId, refresh),
     }, '揺れ');
-    actions = el('div', { class: 'editor-actions' }, [copyBtn, replaceBtn, variantBtn, modeToggle]);
+    actions = el('div', { class: 'editor-actions' }, [previewBtn, copyBtn, replaceBtn, variantBtn, modeToggle]);
   }
 
   const header = el('div', { class: 'editor-header' }, [backBtn, counterEl, el('div', { class: 'editor-spacer' }), actions]);

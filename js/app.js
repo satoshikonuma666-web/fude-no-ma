@@ -9,7 +9,7 @@ import { renderEditor, applyFontFamily } from './editor.js';
 import { renderProgress } from './chart.js';
 import { openModal } from './modal.js';
 
-const APP_VERSION = '1.0.7';
+const APP_VERSION = '1.0.8';
 
 const ROUTES = {
   '#screen-home':       renderHome,
@@ -748,7 +748,7 @@ function openQuickButtonsEditor() {
   });
 }
 
-function doPrintPreview() {
+export function doPrintPreview() {
   const draft = getCurrentDraft();
   if (!draft) { toast('原稿がありません'); return; }
   const w = window.open('', '_blank');
