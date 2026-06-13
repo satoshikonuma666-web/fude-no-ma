@@ -113,11 +113,13 @@ export function renderEditor(root) {
     actions = el('div', { class: 'editor-actions actions-row' }, [previewBtn, copyBtn, replaceBtn, variantBtn, modeToggle]);
   }
 
-  // ヘッダは 2 段構成
-  //   1段目: [戻る] [今日/合計 文字数]
-  //   2段目: [プレビュー][コピー][置換][揺れ][↕↔]（横スクロール可）
+  // ヘッダ構造
+  //   左: [戻る] (2段ぶち抜き / 大きめ)
+  //   右上: [今日 1,234   合計 12,345] (中央寄せ・1行)
+  //   右下: [プレビュー][コピー][置換][揺れ][↕↔] (右寄せ)
   const header = el('div', { class: 'editor-header' }, [
-    el('div', { class: 'header-row-1' }, [backBtn, counterEl]),
+    backBtn,
+    counterEl,
     actions,
   ]);
   screen.appendChild(header);
