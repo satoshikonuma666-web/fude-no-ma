@@ -7,27 +7,44 @@
   height: 100%;
 }
 
-/* ヘッダ（タイトル削除版：左に文字数を大きく・固定） */
+/* ヘッダ（2段構成：1段目=戻る+文字数 / 2段目=アクションボタン群） */
 .editor-header {
   flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  align-items: center;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   padding: 4px 6px;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   position: relative;
   z-index: 8;
 }
-.editor-header .editor-spacer { min-width: 0; }
+.editor-header .header-row-1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+}
+.editor-header .actions-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.editor-header .actions-row::-webkit-scrollbar { height: 0; display: none; }
+.editor-header .editor-spacer { display: none; }  /* 旧 1 段構成の名残 */
 
-/* 大きめカウンタ（左上） */
+/* 大きめカウンタ（ヘッダ1段目の右側） */
 .counter-large {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 2px 4px;
+  margin-left: auto;
   font-variant-numeric: tabular-nums;
   font-family: "Hiragino Sans", system-ui, sans-serif;
 }
@@ -104,8 +121,7 @@
   padding-bottom: 12px;
 }
 .editor-paper {
-  height: 100%;
-  width: 100%;
+  /* width / height は data-mode 別に指定（コンテンツ伸長対応） */
   padding: 14px 18px;
   font-family: "Noto Serif JP", "Yu Mincho", "YuMincho", serif;
   font-size: 16px;
@@ -117,6 +133,21 @@
   user-select: text;
   white-space: pre-wrap;
   overflow-wrap: break-word;
+}
+/* 横書き：横は canvas 幅固定／縦はコンテンツに合わせて伸びる */
+.editor-paper[data-mode="horizontal"] {
+  width: 100%;
+  height: max-content;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+/* 縦書き：縦は canvas 高さ固定／横はコンテンツに合わせて伸びる
+   → これで列が増えてもページ全域に罫線がかかる */
+.editor-paper[data-mode="vertical"] {
+  height: 100%;
+  width: max-content;
+  min-width: 100%;
+  box-sizing: border-box;
 }
 .editor-paper:empty::before {
   content: attr(data-placeholder);

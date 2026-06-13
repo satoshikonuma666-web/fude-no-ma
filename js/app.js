@@ -9,7 +9,7 @@ import { renderEditor, applyFontFamily } from './editor.js';
 import { renderProgress } from './chart.js';
 import { openModal } from './modal.js';
 
-const APP_VERSION = '1.0.8';
+const APP_VERSION = '1.0.9';
 
 const ROUTES = {
   '#screen-home':       renderHome,

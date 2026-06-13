@@ -75,6 +75,8 @@ export function renderEditor(root) {
       onclick: copyWholeBody,
     }, 'コピー');
     actions = el('div', { class: 'editor-actions' }, [doneBadge, previewBtn, copyBtn, modeToggle]);
+    // 2 行ヘッダ用にここでマーク
+    actions.classList.add('actions-row');
   } else {
     const previewBtn = el('button', {
       class: 'editor-mini-btn',
@@ -108,10 +110,16 @@ export function renderEditor(root) {
       onpointerdown: (e) => e.preventDefault(),
       onclick: () => openVariantCheck(paperEl, currentDraftId, refresh),
     }, '揺れ');
-    actions = el('div', { class: 'editor-actions' }, [previewBtn, copyBtn, replaceBtn, variantBtn, modeToggle]);
+    actions = el('div', { class: 'editor-actions actions-row' }, [previewBtn, copyBtn, replaceBtn, variantBtn, modeToggle]);
   }
 
-  const header = el('div', { class: 'editor-header' }, [backBtn, counterEl, el('div', { class: 'editor-spacer' }), actions]);
+  // ヘッダは 2 段構成
+  //   1段目: [戻る] [今日/合計 文字数]
+  //   2段目: [プレビュー][コピー][置換][揺れ][↕↔]（横スクロール可）
+  const header = el('div', { class: 'editor-header' }, [
+    el('div', { class: 'header-row-1' }, [backBtn, counterEl]),
+    actions,
+  ]);
   screen.appendChild(header);
 
   // プレビュー時のバナー
