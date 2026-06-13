@@ -1,6 +1,6 @@
 // 筆の間 — Service Worker
 // バージョン文字列を変えるとクライアントのキャッシュが破棄される
-const CACHE = 'fude-no-ma-v1.0.9';
+const CACHE = 'fude-no-ma-v1.0.10';
 
 const PRECACHE = [
   './',
