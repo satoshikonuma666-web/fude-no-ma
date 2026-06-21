@@ -9,7 +9,7 @@ import { renderEditor, applyFontFamily } from './editor.js';
 import { renderProgress } from './chart.js';
 import { openModal } from './modal.js';
 
-const APP_VERSION = '1.0.12';
+const APP_VERSION = '1.0.13';
 
 const ROUTES = {
   '#screen-home':       renderHome,
@@ -205,6 +205,11 @@ function buildDraftList() {
       title: 'タップでステータスを変更',
       onclick: (e) => { e.stopPropagation(); openStatusPicker(d.id); },
     }, statusLabel(d.status));
+    const renameBtn = el('button', {
+      class: 'draft-rename-btn',
+      title: 'タイトルを編集',
+      onclick: (e) => { e.stopPropagation(); openTitleEditor(d.id); },
+    }, svg('M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z', { size: 16, strokeWidth: 1.8 }));
     const deleteBtn = el('button', {
       class: 'draft-delete-btn',
       title: 'この原稿を削除',
@@ -217,11 +222,57 @@ function buildDraftList() {
         badge,
         el('span', { class: 'char-count' }, `${chars.toLocaleString()} 字`),
       ]),
-      deleteBtn,
+      el('div', { class: 'draft-actions' }, [renameBtn, deleteBtn]),
     );
     list.appendChild(row);
   }
   return list;
+}
+
+export function openTitleEditor(draftId) {
+  const cur = getState().drafts.find(d => d.id === draftId);
+  if (!cur) return;
+  const input = el('input', {
+    type: 'text',
+    placeholder: '原稿のタイトル',
+    value: cur.title || '',
+    autocomplete: 'off',
+    spellcheck: 'false',
+    maxlength: '80',
+    style: { width: '100%' },
+  });
+  // モーダル表示後にフォーカス＆全選択
+  setTimeout(() => { input.focus(); input.select(); }, 80);
+
+  const body = el('div', { class: 'title-editor' }, [
+    el('label', {}, '原稿のタイトル'),
+    input,
+    el('div', { style: { fontSize: '11px', color: 'var(--ink-muted)', marginTop: '4px' } },
+      '空欄のまま保存すると「無題の原稿」になります。'),
+  ]);
+
+  function commit() {
+    const v = input.value.trim() || '無題の原稿';
+    update(s => {
+      const d = s.drafts.find(x => x.id === draftId);
+      if (d) { d.title = v; d.lastEditedAt = Date.now(); }
+    });
+    toast(`タイトル: ${v}`);
+    navigate();
+  }
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); /* 自動で close される側のactionで処理 */ }
+  });
+
+  openModal({
+    title: 'タイトルを編集',
+    body,
+    actions: [
+      { label: '保存', variant: 'primary', onclick: commit },
+      { label: 'キャンセル', variant: 'ghost' },
+    ],
+  });
 }
 
 export function openStatusPicker(draftId) {

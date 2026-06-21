@@ -4,7 +4,7 @@ import { el, clear, countChars, toast, svg } from './util.js';
 import { getState, update, getCurrentDraft, recordTodayChars, patchSettings } from './store.js';
 import { openSearchReplace, openVariantCheck, openDictionary } from './search.js';
 import { openModal } from './modal.js';
-import { doPrintPreview } from './app.js';
+import { doPrintPreview, openTitleEditor } from './app.js';
 
 let saveTimer = null;
 let paperEl = null;
@@ -56,9 +56,19 @@ export function renderEditor(root) {
   }, settings.writingMode === 'vertical' ? '↕' : '↔');
   modeToggleEl = modeToggle;
 
+  // タイトル編集ボタン（完了状態でもタイトルだけは編集可）
+  const titleBtn = el('button', {
+    class: 'editor-mini-btn',
+    title: 'タイトル編集',
+    type: 'button',
+    tabindex: '-1',
+    onpointerdown: (e) => e.preventDefault(),
+    onclick: () => openTitleEditor(currentDraftId),
+  }, 'タイトル');
+
   let actions;
   if (isReadOnly) {
-    // プレビュー時は『完了』バッジ＋プレビュー＋全文コピー
+    // プレビュー時は『完了』バッジ＋タイトル＋プレビュー＋全文コピー
     const doneBadge = el('span', { class: 'editor-done-badge' }, '完了 / プレビュー');
     const previewBtn = el('button', {
       class: 'editor-mini-btn',
@@ -74,9 +84,7 @@ export function renderEditor(root) {
       onpointerdown: (e) => e.preventDefault(),
       onclick: copyWholeBody,
     }, 'コピー');
-    actions = el('div', { class: 'editor-actions' }, [doneBadge, previewBtn, copyBtn, modeToggle]);
-    // 2 行ヘッダ用にここでマーク
-    actions.classList.add('actions-row');
+    actions = el('div', { class: 'editor-actions actions-row' }, [doneBadge, titleBtn, previewBtn, copyBtn, modeToggle]);
   } else {
     const previewBtn = el('button', {
       class: 'editor-mini-btn',
@@ -110,7 +118,7 @@ export function renderEditor(root) {
       onpointerdown: (e) => e.preventDefault(),
       onclick: () => openVariantCheck(paperEl, currentDraftId, refresh),
     }, '揺れ');
-    actions = el('div', { class: 'editor-actions actions-row' }, [previewBtn, copyBtn, replaceBtn, variantBtn, modeToggle]);
+    actions = el('div', { class: 'editor-actions actions-row' }, [titleBtn, previewBtn, copyBtn, replaceBtn, variantBtn, modeToggle]);
   }
 
   // ヘッダ構造

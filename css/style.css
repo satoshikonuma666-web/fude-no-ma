@@ -405,22 +405,36 @@ body {
   align-items: flex-end;
   gap: 4px;
 }
-.draft-delete-btn {
+.draft-actions {
   grid-row: 1 / 3;
   grid-column: 3 / 4;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+}
+.draft-rename-btn,
+.draft-delete-btn {
   background: transparent;
   border: none;
   color: var(--ink-muted);
-  width: 36px;
-  height: 36px;
-  border-radius: 18px;
+  width: 32px;
+  height: 30px;
+  border-radius: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
+  padding: 0;
 }
+.draft-rename-btn svg,
 .draft-delete-btn svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+.draft-rename-btn:active {
+  background: rgba(44, 74, 110, 0.10);
+  color: var(--accent);
+}
 .draft-delete-btn:active {
   background: rgba(196, 69, 69, 0.12);
   color: var(--warn);
